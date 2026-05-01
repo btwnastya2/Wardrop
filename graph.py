@@ -13,10 +13,8 @@ class Graph:
     def build_transport_graph(self, k=2, p=0.3, seed=42):
         random.seed(seed)
 
-        # 1. Базовый связный граф (small-world)
         G_undir = nx.connected_watts_strogatz_graph(self.num_vertices, k, p, seed=seed)
 
-        # 2. Делаем ориентированный граф
         G = nx.DiGraph()
 
         for u, v in G_undir.edges():
@@ -25,7 +23,7 @@ class Graph:
             else:
                 G.add_edge(v, u)
 
-        # 4. Добавим немного случайных рёбер (альтернативные пути)
+        # добавим немного случайных рёбер
         extra_edges = int(self.num_vertices * 0.5)
         for _ in range(extra_edges):
             u, v = random.sample(list(G.nodes()), 2)

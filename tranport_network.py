@@ -7,9 +7,11 @@ import numpy as np
 
 class Transport_network:
 
-    def __init__(self, g, num_vertices=10, seed=42):
-        self.graph = Graph( num_vertices=num_vertices)
-        # self.graph = g
+    def __init__(self, g=0, num_vertices=10, seed=42):
+        if g == 0:
+            self.graph = Graph( num_vertices=num_vertices)
+        else:
+            self.graph = g
         self.graph.draw_graph()
         self.pairs_start_finish = {} #нужно ручками задавать, ждет {(O_1,D_1): плотоность потока_1,(O_2,D_2):плотность потока_2,...}
         self.pairs_and_routs = {} #словарь пара: маршруты
@@ -84,9 +86,66 @@ class Transport_network:
         ])
         return np.sum(self.c_matrix[:,n] * edge_times)
 
-    def time_from_to(self, O, D):
-        return np.sum(np.array([self.time_on_rout(i) for i in self.dict_pairs_num_routs[(O,D)]]))
+    # def time_from_to(self, O, D):
+    #     return np.sum(np.array([self.time_on_rout(i) for i in self.dict_pairs_num_routs[(O,D)]]))
 
     def get_timef_on_rout_integrate(self):
         self.dict_integrals = {i : sp.integrate(self.dict_delayed_funcs[i], (self.rho, 0, self.rho)) for i in self.dict_delayed_funcs.keys()}
+        print(self.dict_integrals)
         return self.dict_integrals
+
+    def upd_tr_network(self, n_edge):
+        s = len(self.dict_flows_on_routs)  # маршруты - стобцы
+        upd_routs = {}
+        edge = self.dict_edges[n_edge]
+        counter = 0
+        arr_flows = []
+        checker = set()
+        dict_old_new = dict()
+        for k in range(s):
+            if edge not in set(itertools.pairwise(self.dict_flows_on_routs[k]['rout'])):
+                upd_routs[counter] = self.dict_flows_on_routs[k]
+                upd_routs[counter]['prev_num'] = k
+                dict_old_new[k] = counter
+                checker.add(k)
+                arr_flows.append(upd_routs[counter]['flow'])
+                counter += 1
+
+        p = len(self.dict_edges)  # дуги - строки
+        l = len(upd_routs)  # маршруты - стобцы
+        print(l)
+        new_c_matrix =  np.zeros((p, l))
+        print(self.dict_edges)
+        for i, j in self.dict_edges.items():
+            for k in range(l):
+                if j in set(itertools.pairwise(upd_routs[k]['rout'])):
+                    new_c_matrix[i, k] = 1
+
+        new_network = Transport_network()
+        new_network.graph = self.graph
+        new_network.dict_flows_on_routs = upd_routs
+        new_network.dict_delayed_funcs = self.dict_delayed_funcs
+        print(new_network.dict_delayed_funcs)
+        print(new_network.dict_flows_on_routs)
+        new_network.arr_flows = np.array(arr_flows)
+        new_network.c_matrix = new_c_matrix
+        # new_network.pairs_and_routs = self.pairs_and_routs ###
+        new_network.pairs_start_finish = self.pairs_start_finish
+
+        new_dict_pairs_num_routs = defaultdict(list)
+        for i,j in self.dict_pairs_num_routs.items():
+            for a in j:
+                if a in checker:
+                    new_dict_pairs_num_routs[i].append(dict_old_new[a])
+
+        new_network.dict_pairs_num_routs = new_dict_pairs_num_routs
+
+        # values = vars(new_network).values()
+        # print(values)
+
+        return new_network
+
+
+
+
+

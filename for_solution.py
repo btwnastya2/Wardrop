@@ -11,11 +11,14 @@ class Solution:
 
     def build_Func(self):
         d = self.tr_network.get_timef_on_rout_integrate()
-        return sum(d[i].subs(self.tr_network.rho, self.tr_network.get_flow_on_edge(i)) for i in self.tr_network.dict_edges)
+        print('cловарь интегралов')
+        print(d)
+        return sum(d[i].subs(self.tr_network.rho, self.tr_network.get_flow_on_edge(i)) for i in self.tr_network.dict_edges if i in d.keys())
 
     def preparing_func(self):
         f_sym = self.build_Func()
         v = [j for i,j in sorted(self.vars.items(), key=lambda x: x[0])]
+        print(f'Порядок переменных:{v}')
         f_num = sp.lambdify(v, f_sym, 'numpy')
 
         return lambda x: f_num(*x)
@@ -63,11 +66,6 @@ class Solution:
 
         for i in self.vars.keys():
             print(self.tr_network.time_on_rout(i, res.x))
-
-        # for i in self.vars:
-        #     print(i)
-        #     print(self.tr_network.time_on_rout(i, res.x[1]))
-
 
         return res
 
